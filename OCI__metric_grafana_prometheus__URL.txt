@@ -1,0 +1,11 @@
+https://blogs.oracle.com/cloud-infrastructure/post/oci-monitoring-makes-it-easy-to-export-metrics
+
+https://github.com/oracle/oci-grafana-metrics
+
+https://blogs.oracle.com/cloudnative/post/monitoring-oke-with-prometheus-and-grafana
+
+https://github.com/oracle/oci-grafana-metrics/blob/master/docs/images/Screen%20Shot%202018-12-19%20at%203.02.31%20PM.png
+
+https://github.com/oracle/oci-grafana-metrics/blob/master/docs/using.md
+
+https://github.com/oracle/oci-grafana-metrics
