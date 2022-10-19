@@ -1,0 +1,355 @@
+
+ 
+ OS - File,Process
+
+  
+  Process
+	|
+	|
+  ---------------
+ |               |
+ User process    System Process
+ 
+ - by user         - not created by user
+ |		   |
+ - pts/<port>	   - ?
+ |		   |
+ - 		   - os loading time - system process will start
+
+		   - filename.service( sshd.service
+				       grafana-server.service
+				       prometheus.service
+				       ....)
+		   ---------------//
+
+  grafana.exe (or) /usr/bin/grafana
+		
+   filename.service
+	-
+   ExecStart=/usr/bin/grafana
+	     grafana.exe 
+
+    ->Running            - do visualization
+     |
+     Stop                -  ....
+ -------------------------------------------------------------------------------
+ Grafana
+ -------
+ -> Visualization tool - visualizing time series data,like cpu ,memory,I/O,service
+			- application - utilization
+			  ............
+			    MVT(Frame Work -client,webserver,templte,python,/java,DB)
+			   
+		      (CPU%) (CPU%)
+			Web  Code   Appln
+			[node]		CPU %
+ 
+ -> grafan-server.service (R+)
+
+
+   Grafana (Visualization ) --<-- DataSource(prometheus,any DB(Timeseriesformat))
+				 |---------------------------------------------|
+	.......................................
+	|
+  		
+	Grafana - randomquery(random numbers//data) - do visualization
+			+
+		   influxDB (user input;) - do visualization
+			+
+		    prometheus (metric) - do visualization
+ 
+ ---------------------------------------------------------------------------------
+  Linux like os
+ 
+  systemctl start grafana-server.service
+  systemctl status grafana-server.service (or) systemctl is-active grafana-server
+
+   |
+   open a broswer -> on the address bar -> 127.0.0.1:3000
+
+
+	Login: admin
+	|
+	password: admin 
+	
+	|
+	Grafana dashboard - page
+ -------------------------------------------------------------------------------
+ Dashboard - Collection of panel
+			   -----
+			      |->Visualization tool
+				 -------------------
+					|->set of attributes(properties)
+					   ------------------------------
+						//editable (or) changeable
+
+  How to create dashboard?
+  
+  1st ->create an panel ->select visualization ->do.. ->Save this dashboard
+							---------------------
+								|->General (folder)
+								   bydefault
+			(or)
+
+  1st -> create folder
+		|
+		create dashboard
+			|
+			create a panel 
+
+ -----------------------------------------------------------------------------
+
+ create a new dashboard
+ |
+ |
+ |->create a newpanel - Gauge (first)
+			|
+			Title: swap memory
+			|
+			[ Panel1 ]
+			
+			- duplicate this panel(swap memory)
+				|
+				Gauge - edit ->max 
+				|
+				Title - used memory
+				|
+				[ Panel2]
+			- duplicate one more gauge panel - Title(Free memory)
+				|
+				gauge value - min 
+ 
+ [Panel1] [Panel2 ]  [Panel3]
+
+-------------------------------------------------------------------------------------------
+   json
+   -----
+    number  
+    string
+    bool
+    array    - Collection of items - index -[]		- mutable
+    object   - Collection of items - key   -{key:value} - mutable
+
+   object of array
+   object of object
+   array of array
+   array of object
+   ------------------//MD
+
+    
+
+   object of array		array of array
+   ----------------		----------------
+   {K :[]}			[[],[],[],[]]
+
+   object of object		array of object
+   -----------------		----------------
+   {K: {K: Value}}		[{K:V1},{K1:V2},{K1:V3}] 
+    -   -
+    |--->
+
+ 
+ -------------------------------------------------------------------
+  create a new folder(day1)
+	   -----------
+		|
+		new dashboard
+		|
+		new panel
+		..
+		..
+		|
+		inspect ->panel json  - do some changes in json 
+					|
+					apply - see the panel(Updated Result)
+
+		|
+		Try with differnet panel 
+		|
+		Save this two panel(save dashboard)
+					  |
+					edit - link (copy link - open other window)
+					edit - export - view json file
+						      - save json file
+
+
+		|
+		|->(+) - import exisiting jsonfile - overwrite 
+
+   -----------------------------------------------------------------
+
+   Query -> Calculate swap space  
+
+
+
+   [panel]	[shows - swap space] -OK
+	|	|
+	Query ...
+
+  ..		 -----------------//
+
+
+		How to convert ourpanel(User defined) to library panel?
+
+			
+
+
+  ...
+  ...
+  ...
+  [ swap space ] ... How to import existing lib.panel ?
+
+ 
+ ---------------------------------------------------------------------
+
+	[panel1] ->duplicate this panel -> [panel2]
+	 |				    --------
+	 |->TS					|->graph
+         |->Th 80				|->Th 120
+	 |->mysql(DB)				|->mysql(DB)
+				Vs
+
+	[panel1] <-------------->[panel2]
+		      link/lib
+				 [] 
+				  |  - lib panel
+				  []
+ --------------------------------------------------------------------------------
+  
+  Task-1
+  ------
+  create a panel (stat)
+		|
+	       Last value
+		|
+	       update value mapping (range)
+		|
+		Duplicate this panel -> change the type to Gauge Panel
+							   ------------
+							   ->Last value
+							    |
+			[refresh dashboard]
+
+							  ->max value
+   Task-2								...
+   ------	|
+		create a lib.panel  ------> add a new lib panel
+						...
+						updateAll
+		...				...
+						unlink
+						...
+		
+ -----------------------------------------------------------------------------
+
+							
+	Panels: [{'K1':'V1','K2':'V2'},{'K1':'V1','K2':'V2'}]
+	 	--------------------- --------------------
+			0			1
+
+	[1]['K1']='Value-1'
+
+	
+							
+	[{'K1':'V1','K2':'V2'},{'K1':'Value-1','K2':'V2'}]
+-----------------------------------------------------------------------------------
+
+ TimeseriesDB(TSDB)
+ -------------------
+ ->A time-series DB - time is indexed
+		      ---------------
+		->when inserting new value to DB ->automatically date/time will
+						   inserted 
+						 ->Timestamp
+
+		->(Timestamp,value)//data
+
+ RDBMS						TSDB
+ insert a value ( n->50) -> | n |	Vs    insert a value (n->50)
+			    |---|				
+  			    | 50|			time | value
+							-----|-------
+						    timestamp|   50
+						    .........	....
+							|	  |__Y
+							X
+ ex: prometheus,influxdb,Aerospike,..
+
+ mysql, ->  [TimeIndex |.... ]
+ oracle, -> [TimeIndex |.... ]
+ sqlite3 -> [TimeIndex |.... ]
+		|
+		Required
+ ------------------------------------------------------------------------------
+  1st - Data Source configuration
+  |
+  2nd - Run ->DB(TSDB) ->insert some value  - create a panel ->source a dbname ->panelvisualization
+			  .....					....
+			  .....					....
+ 			  .....					....
+
+ 
+ influxql query structure
+ -------------------------
+ measurement  - (in RDBMS tablename)
+ <tag-key>=<tag-value> - in RDBMS column of table with index 
+ <field-key>=<field-value> - in RDBMS column of table without index 
+
+ <meaurement>[,<tag-key>=<tag-value>] [<field-key>=<field-Value>,...]
+
+ create database <DBName>
+ |
+ insert <measurement>,[Tag-Key=Value ... ]
+ |
+ select *from <measurement> 
+  
+ create database demoDB
+ |
+ insert cpuUsage,host=server1,region=us_east value=0.12
+	-------- ============================--------------
+
+	<time>	<value>
+	......   .....
+
+ insert cpu_load,host=host02 value=120
+ 
+ time                host   shm value
+----                ----   --- -----
+1653358639879999400 host03      120
+ 
+# - download - influxdb shell (version 1.6 1.7 1.8 )
+# ---------------------------- --------------------
+# https://www.programmersought.com/article/8783578763/
+------------------------------------------------------------------------------------
+	1st - Data Source configuration
+
+	|
+	Grafana -> datasource settings ->datasources 
+						|
+						Add datasource
+						|
+						influx DB(example)
+						|
+					DB-Sourcename: <logicalName>
+							------------
+
+						|
+						http://localhost:8086
+						|
+						DataBase name: demoDB(example)
+						|
+						..
+						[Save & Test] ->OK //
+   -----------------------------------------------------------------------------
+	|
+	Go to ->create a newdashboard ->create a newpanel 
+						   |
+						select - <logicalName> //DBSource
+						   |
+						 data will display in panel
+	insert some value in influxdb  <----> visualization (refersh)
+						....//change graph-line-datapoint
+						    //set threshold
+						    //....
+						    //visualize json 
+ ----------------------------------------------------------------------------------

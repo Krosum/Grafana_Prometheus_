@@ -1,0 +1,268 @@
+
+ 1. measurement (number - int/float) - prometheus,influxdb 
+ 
+ 2. logging (text - string)
+
+ 3. tracing - micro services
+ 
+# NON-TSDB(timeseriesDB)
+#
+# example: mysql
+# ---------------
+root@host~]# mysql -u root -p
+Enter a password:
+mysql> show databases;
+mysql> 
+create table `customers(`time_sec` bigint(25) NOT NULL,`counter` int(10) NOT NULL,
+PRIMARY KEY(`time_sec`));
+mysql> insert into ... ...
+..
+quit
+ 
+		(or)
+
+create table customer(time_sec bigint(20) NOT NULL,counter int(10) NOT NULL,PRIMARY KEY(time_sec)
+group by date_format(date_insert,$_interval)
+ 
+			(or)
+
+ dt   		   | server | cpu_utlization
+ "9:30-2022-10-18" | host01 |   124
+  ---------------
+	|
+	won't support grafana ->error - not TSDB format
+ |
+ |
+ in grafana - query editor
+ |
+ |
+ select dt,max(cpu_utilization) from cpu_load group dt {enter} //query editor
+ 				     -----------------------
+					|
+					|
+ select dt as "time",max(cpu_utlization) from cpu_load by dt {enter} 
+___________________________________________________________________________________
+  ->Dynamic dashboard
+    -----------------
+
+	keys
+	-----
+	host01
+	host02
+	host03
+	host04
+	host05
+	..
+	host100
+
+
+  view - host01 server details only
+
+  view - host01,host02,host07 - servers details only
+
+  variable - namespace (or) placeholder - holding a value
+					  ----------------
+					  - variable types -query,dashboard,
+							    datasource,etc.,
+	in dashboard -> variable |___________|
+
+  step 1: configure datasource - Working
+  |
+  step 2: create a dashboard - select datasource 
+  |
+  step 3: go to dashboard settings ->variable ->create a newvariable
+			
+ 	  variableName| user defined |  type |query|
+ 
+	  query ->show tag values with key="host" <==influxDB
+	  |
+	  preview: values
+
+  |
+  step 4: Dashboard -> variable | _____ |
+	   |
+	 Query editor -> select <table_name> key =~ /^$variable$/
+
+  
+ 
+  $variable - (1) 
+
+  in Regx -> pattern only style =>  ^pattern$  -> ^$variable$ -(2)
+						  |---------|
+ 						     Regx
+__________________________________________________________________________________
+ # dashboard links
+ # -------------------
+ step 1: create a new dashboard (save it)
+ |
+ step 2: go to dashboard settings ->link ->type: dashboard type
+						 |
+						 ..
+ |
+ step 3: go to dashboard panel //see the dashboard link (externallink)
+ |
+ step 4: create a new panel ->dashboard panel list ->enable previous dashboard
+						     enable search dashboard
+ |
+ |
+ step 5: go to dashboard settings ->link ->type: links - add url 
+-----------------------------------------------------------------------------------
+ annotation
+ ----------
+  place our text on the data point
+
+  |   .<== DB-Running - CPU is High
+  |      
+  |      .<== ....
+ -|--------------
+  |
+   
+ path -> file://D://file.csv  (or) file:///home/user/emp.csv
+ 
+ 
+ --------------------------------------------------------------------------------
+ Alert services
+ --------------
+  
+ Grafana + Excel
+ Grafana + CSV
+ Grafana + mysql
+  ...
+ --------------------//Alertmanagement 
+ 
+ |
+ |
+ 1. Configure Alert channel 
+ 2. Create alert rule - Query based.
+ ----------------------------------------------------------------------------
+ 
+Grafana - pending topics:
+---------------------------
+ 1. grafana + data source - export 
+  script -> install grafana 
+  |
+  json ->import dashboard+datasource
+
+  DB1+influxdb(cpu_load)
+  -------------------------->file.json ----------> [import file.json]
+							|
+							[we can import file]
+							[ panel ]
+							     |-- there is no influxDB
+							[BadGateWay]
+							   -[ ]
+
+ 2. embedding grafana dashboard with html file (file.html) 
+ ------------------------------------------------------------------------------------------
+
+ prometheus - datasource - TSDB - system resource metrics
+ ----------   -----------
+	
+	1. yaml
+	2. unit file(or)service file 
+ 
+
+  General any config file
+  -------------------------
+	1. INI format => key=value
+	2. YAML format 
+
+
+ [repo1]
+ base_url=https://yum.oracle.com/...
+ enabled=1
+
+ [repo2]
+ base_url=https://yum.oracle.com/..
+ enabled=0
+ -----------------------------------------//INI
+
+ filename.yml (or) filename.yaml
+ --------------------------------
+  |->Key: Value //format
+	  -----
+	   |->1.Single(Scalar)
+	   |->2.Collection(array/list; object/dict)
+
+ 
+  |->Key:<space>Value
+
+  global: 10secs
+  hosts:  host01.example.com
+  IPs:  ['10.20.30.40','10.20.34.56']
+
+	(or)
+  IPs:
+  -<space>10.20.30.40
+  -<space>10.20.34.56
+  
+  hosts: {'K1': Value1,K2: Value2}
+  
+	(or)
+
+  hosts:
+  <><>K1: Value1
+  <><>K2: Value2
+
+  <> - 1space
+
+
+  hosts: [{'url': 'url_name'},{'url': 'url_name'}]
+		(or)
+
+  hosts:
+  - url: 'url_name'
+  - url: 'url_name'
+
+ 
+ global: {scrape_interval: 15s,evaluation_interval: 5s}
+
+ 	(or)
+ global:
+   scrape_interval: 15s
+   evaluation_interval: 5s
+
+ 
+ d: {K1: 10,K2: 20} //OK
+
+ d: {K1: 10,K1: 20} //keyduplication - overwrite existing key
+
+
+ d: [{K1: 10},{K1: 20}] //OK
+     --------|--------
+	0	1
+
+	(or)
+  d:			scrape_configs:
+  - K1: 10  		- job_name: <name1>
+  - K1: 20 		- job_name: <name2>
+  
+
+ d: [10,10.34,[D1,D2],{K1: 100}]
+		      ---------
+
+ d: [{K1: 100},{K1: 200},{K1: 345},{K1: 456}]
+     ---------  -------  --------   -------- //there is no duplicate key
+
+		Vs
+
+ d: [{K1: 100,K1: 200,K1: 345,K1: 456}] //duplicate key entry
+
+ ----------------------------------------------------------------------------------------
+ service file (or) unit file
+ ----------------------------
+  |->INI format
+ 
+   1. /etc/systemd/system/filename.service
+
+	[Unit]
+		
+	[Service]
+
+	[Install]
+  
+
+   2. reload daemon -> systemctl daemon-reload
+   3. enable service -> systemctl enable filename.service
+   4. start a service -> systemctl start filename.service
+ ___________________________________________________________________________

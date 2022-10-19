@@ -1,0 +1,424 @@
+ prometheus
+ -----------
+ |
+ data model -> metric ->label ->key/value format
+ 
+ ->go
+ ->timeseries 
+ |
+ ->rules
+    ->promQL
+
+ ->metric types
+	1.couters
+	2.gauges
+   	3.histogram - buckets 
+	4.summary
+
+ ->metric_name {key=value,key=value,key=value}	value 
+   ------------------------------------------------------//promQL
+	|
+	|
+	cpu_total{idle=55;wait=34}    24.45
+	---------|---------------|    ------
+					|
+					Y
+
+	process_cpu_....
+	node_cpu_.....
+	flask_cpu_....
+	mysql_cpu_....
+
+  [node1] -------------------- prometheus
+				..
+				wait -5s
+	  --------------------- ..
+				wait -5s
+	  --------------------- ..
+				wait -5s
+  ...(2s) <=========		|
+	     |--push-gateway
+  	  ------   |<---------- ...
+
+  Application monitoring - using client libs - we can write own custome metric
+  |
+  |
+  Infrastructure monitoring - pre-defined metrics 
+  ---------------
+  ->system resource 
+    physical,virtual system,cloud,containers
+
+
+ -----------------------------------------------------------------------------
+  |
+ Linux like os 
+ ---------------
+  1. download prometheus.zip file from prometheus.io/download
+  |
+  2. extract prometheus.zip file 
+  |
+  3. copy prometheus(binary file) to /usr/bin (or) /usr/local/bin (or) /local/bin
+	  promtool  		  to /usr/bin (or) /usr/local/bin (or) /local/bin
+     copy prometheus.yml	  to /etc/prometheus/
+
+  4. create own prometheus service file 
+	|
+	under /etc/systemd/system/prometheus.service
+  5. reload daemon  - systemctl daemon-reload
+  6. enable service - systemctl enable prometheus.service
+  7. start a service  - systemctl start prometheus.service
+			systemctl status prometeus.service
+  |
+  8. open a broswer -> 127.0.0.1:9090{enter}
+   
+ ----------------------------------
+	prometheus.exe (or) /bin/prometheus  - execution
+
+	prometheus.service <== to control /bin/prometheus
+
+	prometheus.yml 	(or)  /etc/prometheus/prometheus.yml  - configuration file
+
+
+ node exporter 
+ ---------------
+	
+  [Ubuntu-prometheus]		[OL7] 
+				 
+  step 1: network configuration 
+	  ---------------------
+  step 2: both nodes are pingable 
+	  -----------------------
+
+  step 3: Go to remote node 
+	  download node_exporter ->create node_exporter.service file ->runthis service file
+	  //node_exporter.service //act as a agent
+	    ---------------------
+			|->R+
+
+  step 4: update - remote node ip details & portnumber(9100) to prometheus.yml file
+  |
+  step 5: restart prometheus 
+  |
+  step 6: prometheus UI ->targets 
+				localhost:9090
+				<remoteIP>:9100
+ 
+  remote node metric name starts with node_<name>
+				      --------------//remote node 
+  
+	
+ 			
+   [prometheus-server] <----->[remote_node]
+				
+ ________________________________________________________________________________________________________________________
+    	
+ Virtual box
+ -------------
+  [OL7]    - poweroff state
+  [Client] - poweroff state
+  [Ubuntu] - poweroff state
+
+ Virtual Box ->File ->preferences ->Network -> Click (+) ->doubleClick(NAT network)
+							  assign some name(ex:LAB1)->OK.
+ 
+ select - OL7 ->settings ->network ->NAT network - check bridename is labelled.
+ 	
+ |
+ start a OL7,client,Ubunut
+
+ Login: root
+ |
+ password: apelix
+  
+ open a terminal ->ip a  (or) ifconfig 
+
+ -> /etc/hosts - <remoteIP> <fqdn> <alias> 
+	
+    update remote IP details inside this file
+
+ example:-
+ ----------
+ Ubuntu -> 10.0.2.6  - hostname is node1 (hostname)
+
+ vi /etc/hosts {Enter}
+
+ 10.0.2.6 node1
+ 10.0.2.5 student
+ 10.0.2.4 krosumlabs
+ :wq
+ ping 10.0.2.5
+ ping student
+ ping 10.0.2.4
+ ping krosumlabs
+ ..
+ ssh krosumlabs
+ ...
+ yes
+ apelix
+ root@krosumlabs~]# ...
+ root@krosumlabs~]# exit
+ ----------------------------------------------------------------------------------
+
+
+	 [promethues]
+		|---->application(framework;db etc.,)
+		|---->system(local;remote m/c)
+
+
+	[[ prometheus ]]
+ 	  
+		[django]
+
+		[mysql]
+
+		[remote-server] - node_exporter(emmActive)
+
+		Virtual Box ->[instance]
+____________________________________________________________________________________
+ 
+  cp node_exporter  /usr/local/bin  
+
+  vi /etc/systemd/system/node_exporter.service
+  
+  [Unit]
+  Description=node_exporter service
+  [Service]
+  ExecStart=/usr/local/bin/node_exporter
+  [Install]
+  WantedBy=multi-user.target
+
+  :wq
+  systemctl daemon-reload
+  systemctl enable node_exporter.service
+  |
+  systemctl start node_exporter.service
+  |
+  systemctl status node_exporter ->Running ->OK
+  |
+  update current m/c ipaddress to prometheus-server yaml file  /etc/prometheus/prometheus.yml
+				  ---------------------------
+ 
+				 -
+ job_name: 'node_exporter'
+    
+				   scrape_interval: 5s
+    
+				   static_configs:
+      
+				     - targets: ['remotehostIP:9100']
+  systemctl restart prometheus
+  |
+  systemctl status prometheus
+ 
+ --------------------------------------------------------------------
+ create dashboard - display system 
+  DB-1
+  [Gauge]			[Gauge]					[Gaguge]
+  - Virtualmemory		- process_resident_memory_bytes		- go_memstats_frees_total
+	
+  ------------ create row ->localhost-memory ->autoupdate every 5secs
+  
+  
+  DB-2   
+  [localhost]   [node1  ]  [node2]
+    vm		  vm	    vm
+    res		  res	    res
+ --------------------------------------------------------------------------------------
+
+  relational operators		Vs	regx operators (or) bind operators
+
+   =   !=					=~  !~ 
+
+ variable = value				---------
+ variable != value
+
+ Regular Expression
+ -------------------
+ - specific pattern 
+   --------
+	|->char(A-Za-z0-9spacespecialchars)
+	|->combine multiple pattern 
+	
+   ^  $   ^pattern$   .  .*  [ ] ^[ ]  [ ]$  [^  ]  | () {} + <== Regx chars
+
+  1.BRE(Basic Regular Expression) - Single pattern
+  ---------------------------------------------------
+  ^ 
+  $ 
+  ^pattern$
+  .	- match any single char (except \n)
+  .*
+  [] 
+  ^[]
+  [^]
+  []$
+  
+  2.ERE(Extended Regular Expression) - more than one pattern
+  -----------------------------------------------------------
+   |  ()  {}  +
+
+  
+  metricName =~ "^pattern" - line/string - starts with pattern
+  |
+  filesystem_files{fstype =~ "^xfs"} - starts with xfs
+  filesystem_files{fstype =~ "xfs$"} - ends with xfs
+  filesystem_files{fstype =~ "^xfs$"} - xfs only 
+  |
+  filesystem_files{fstype =~ "^btrf.$"}  ->btrf<anySingleChar> 
+			       ------
+				 |->pattern only
+
+  cpu_load_utlization{LB =~ ".00$"}   - pattern ends with
+			     |________anychar<followedby 2 zero's>
+
+  filesystem_files{fstype =~ ".*" } - list of all 
+
+  [] - character class
+  --
+  |->single char 
+ 
+   ext[234]
+   -----------> ext2 ext3 ext4 //matched 
+   
+ filesystem_files{fstype =~ "ext[234]"} (or) filesystem_files{fstype =~ "ext[2-4]"}
+
+  ex[Tt][234]
+  ------------// exT2 exT3 exT4 ext2 ext3 ext4 //matched 
+  
+  [a-z] - any lower case  
+  [A-Z] - any uppercase 
+  [a-zA-Z] - any alpha 
+  [0-9] - any number 
+  [a-zA-Z0-9] - any alpha number
+
+  ^[a-zA-Z] - starts with any alpha 
+   [a-zA-Z]$ - line ends with any alpha 
+   
+    [^a-z] - not matching any lower case 
+
+    [^a-zA-Z0-9] - matching space and specialchars
+      
+   --------
+  ERE
+ -----
+  filesystem_files{fstype =~ "xfs|ext4"} - any one pattern is matched ->True
+  
+  metric_name{key =~ "(xfs)(ext4)"}
+		      ------------ //both pattern should match - same order
+
+			xfs ext4 //not matched
+			   <>
+
+			ext4xfs //not matched
+
+			xfsext4 //matched
+
+			"(xfs).(ext4)" xfs ext4
+				       xfs,ext4 
+				        ---------//matched
+  <pattern>+ -> 1 or more times
+
+			apache2
+			processx23
+			processx424
+			--------===
+			^[a-zA-Z].*[0-9]+
+				   ------
+			apache2
+			processx23
+			processx424
+			--------------//matched
+
+			processx412,45 - not matched
+ 
+  ab+c -> abc abbbbbbbbbbbbbbbbbbbbbbbbbbbc //matched
+  
+	abbbbbbbbbbbb,bbbbbbbbbc //not-matched
+ 
+  <Pattern>{n} - n times
+   
+  ab{2}c -> abbc //matched 
+	
+	    abc abbbc //not-matched
+ 
+  <Pattern>{n,} - minimum 'n' times - maximum nolimit
+
+   ab{2,}c -> abbc abbbbbbbbbbbbbbbbbbbbbbbc //matched 
+
+   ab+c  --- same as --- ab{1,}c 
+    --			  ---
+   
+  <Pattern>{n,m} - minimum 'n' times - maximum 'm' times
+
+  ab{2,4}c => abbc abbbc abbbbc //matched  
+   ------
+  ----------------------------------------------------------------------------------------------------
+  node_cpu_total <== metric name
+  --------------
+
+	|-> {K1=V1,K2=V2,K3=V3,....Kn=Vn} //label
+
+  	    {instance="10.0.2.4",mode="irq"} //label
+
+	
+  node_cpu_total{instance = "10.0.2.4:9100"}
+		 ---------------------------//filter - compare char by char
+  		Vs
+  
+  node_cpu_total{instance = "10.0.2.4:91[0-9]{2}"}  ->Empty
+			  ^
+		 ---------|-------------========
+			  |
+		Vs
+
+  node_cpu_total{instance =~ "10.0.2.4:91[0-9]{2}"}  ->will get matched result
+			  ^
+		 ---------|-------------==============
+			  |		  Regxpattern
+
+ 
+ 127.0.0.1:9090/metrics - list of metrics
+
+ 10.0.2.4:9100/metrics  - list of metrics
+ |
+ |
+ |
+ Note:
+ ------			
+  In prometheus any variable name (or) label name starts with __(double underscore) and ends with
+  doubleunderscore(__) - pre-defined (or) special variable/label
+  
+ __name__  - list of metric name
+
+
+ returning all the timeseries for multiple metric names.
+ 
+ {__name__ =~ "process_.*"} <== filtering list of metric name - contains process_<followed anyname>//list ofall
+
+
+process_cpu_seconds_total{instance="localhost:9090", job="prometheus"} 67.4236322
+
+process_max_fds{instance="localhost:9090", job="prometheus"} 16777216
+
+process_open_fds{instance="localhost:9090", job="prometheus"} 125
+
+process_resident_memory_bytes{instance="localhost:9090", job="prometheus"} 43683840
+
+process_start_time_seconds{instance="localhost:9090", job="prometheus"}  1666155595
+
+process_virtual_memory_bytes{instance="localhost:9090", job="prometheus"} 63012864
+
+  
+{__name__ =~ "process_(open|cpu|memory).*"} 
+	  --  ___________________________
+			|
+			|matched patterns are
+			|-> process_open<list of any text>
+			|-> process_cpu<list of any text>
+			|-> process_memory<list of any text> 
+
+
+process_cpu_seconds_total{instance="localhost:9090", job="prometheus"} 67.7200341
+
+process_open_fds{instance="localhost:9090", job="prometheus"}  123
+___________________________________________________________________________________
