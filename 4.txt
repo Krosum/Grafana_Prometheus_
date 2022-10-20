@@ -1,0 +1,383 @@
+ promQL
+ ------
+ 1. Prometheus Query Language(promQL)
+ 2. the use select and aggregate time series data in realtime.
+ 3. promQL - Query broswer
+ 4. promQL parts:
+	-> metric_name
+	-> 1 or more labels {Key=value...}
+	-> value - which is a float64(the recent time stamp collected)
+	-> timestamp - which has millisecond precision.
+
+  5. each metric_name & label combination is called a time-series
+
+  6. time-series - selector 
+	
+  7. metric_name
+     metric_name{key=value}
+     metric_name{key =~ regex}
+
+  8. instant vector - single value (or) scalar 
+     process_cpu_total{instance="localhost:9090",job="prometheus"} ->0.09345
+								     --------
+
+  9. range vector - collection of instant vector
+     ------------
+	|
+	metricname[duration] ->range vector
+			       ............. //won't generate a graph
+ 
+	
+
+	process_cpu_seconds_total[5m] 
+
+	process_cpu_seconds_total{instance="localhost:9090", job="prometheus"}
+1.3884089 @1666239558.385
+4.1496266 @1666239573.385
+4.1964269 @1666239588.385
+4.2432272 @1666239603.385
+4.2588273 @1666239618.385
+4.2900275 @1666239633.385
+4.2900275 @1666239648.385
+4.3368278 @1666239663.385
+4.3524279 @1666239678.385
+
+	counter - always increment value - it won't decrement 
+	-------		 ---------------
+			ex: process_cpu_count
+			    network_...received_bytes
+				
+
+  10.promqL functions
+	vector()
+	scalar()
+	----------//typecast 
+
+	abs()
+	sqrt()
+	log()
+	..
+	--------//mathemtaical
+
+	rate()
+	sum()
+	----------//metric type based 
+
+	label_join()
+	label_replace()
+	----------------//label based
+
+	time()
+	date()
+	date_time()
+	timestamp()
+	month()
+	..
+	-----------------//time/date/year 
+  	
+ -----------------------------------------------------------------
+	Aggregation operator 
+	--------------------
+	without()
+	sum()
+	by()
+	count()
+	max()
+	min()
+
+	Binary operators  - scalar (or) instant values
+	-------------------- -------------------------
+ 	+ - * / % ^	  - arithmetic
+	== != < <= > >=   - relational
+	or and unless     - logical (or) set operators 
+ ----------------------------------------------------------------------------------
+   HTTP API
+   ---------
+  -> all the endpoints are under /api/v1/ - lookup structure,meta data //json format
+  |
+  -> /api/v1/query 
+  |
+  -> localhost:9090/api/v1/query?query=<metricName> {Enter}
+     -------------------------------------------------
+		json 
+		
+     --------------------------------------------------
+  
+    http://127.0.0.1:9090/api/v1/query?query=process_resident_memory_bytes
+
+    {"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"process_resident_memory_bytes","instance":"localhost:9090","job":"prometheus"},"value":[1666246558.514,"34824192"]}]}}
+
+    -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	
+ Task1
+ -------
+ 1. Display amount of free space memory
+ 	
+    -> the percentage of free memory //calculation
+
+ 2. Total webrequest
+    -> last 10mts 
+    |
+    -> avg of 10mts 
+    |
+    -> sum without - keys 
+	   by - keys
+
+ ---------------------------------------------------------------------------
+ record rules
+ --------------
+  |->record_rule.yml 
+
+ groups:
+ - name: <name of the group>
+   rules:
+   - record: job:<metricname>
+     expr:   promQL
+   - record: job:<metricname>
+     expr:   promQL
+     ... 
+   - record: job:<metricname>
+     expr:   promQL
+
+
+
+  |
+  127.0.0.1:9090/rules {enter}
+  |
+  Rules status page
+  |
+  
+  sum without(instance) (rate(process_cpu_seconds_total{job =~ "node.*"}[5m]))
+
+ 
+  -> in yaml ->multiline statement we should use > symbol
+
+   example:
+   ---------
+    key: value1 - single line
+
+    key: >
+      value1
+      value2
+      value3
+      ..
+      valueN
+      -------------//multiline value
+  ------------------------------------------------------------------------
+
+  groups:
+  - name: <groupName>
+    rules:
+    - record: job:<metricName>
+      expr: >
+	sum without(instance)(
+        rate(process_cpu_seconds_total{job =~ "node.*"}[5m]
+        )
+ -------------------------------------------------------------------------------
+  1. Gets the total sum of filesystem size of all nodes -> sum(node_filesystem_size_bytes)
+      |
+  2. by() - keep following keys instance,device -> sum by(instance,device)(node_filesystem_size_bytes)
+
+  3. Gets the size of the largest mounted filesystem on each machine. -> max by(instance)(node_filesystem_size_bytes)
+ 
+  4. return all time series with metric http_requests_total - filter job,handler
+     prometheus_http_requests_total{job = "localhost",handler = "/api/v1/query"}
+
+		
+  5. select all http status codes except 4 followed by any two digits.
+   prometheus_http_requests_total{code !~ "4[0-9]{2}$"}
+
+ ---------------------------------------------------------------------------
+ -> create a record file 		->create a another record file
+	file1.yml			  file2.yml
+	(1) -|			
+	(2) -| group1			 (4)	
+				
+	(3) -| group2			 (5)
+ -----------------------------------------------------------------------------
+
+   file: file1.yml
+  
+   groups:
+   - name: filesystem_size_details
+     rules:
+     - record: job:node_filesystem_size_bytes
+       expr: sum(node_filesystem_size_bytes)
+     - record: job:node_filesystem_size_bytes_by_instance_device
+       expr: sum by(instance,device)(node_filesystem_size_bytes)
+
+   file: file2.yml
+
+   groups:
+   - name: webrequests
+     rules:
+     - record: job:http_requests
+       expr: >
+	 prometheus_http_requests_total{
+         job = "localhost",handler = "/api/v1/query"
+	 }
+     - record: job:http_requess_except 4 followed by any two digits
+       expr: prometheus_http_requests_total{code !~ "4[0-9]{2}$"}
+
+ ------------------------------------------------------------------------------
+  |
+  |->update this file details -> prometheus.yml file
+
+  |-> restart prometheus
+  |
+  |-> open a broswer -> localhost:9090/rules
+ ------------------------------------------------------------------------------
+
+   	  webApplication(total duration:1hrs)
+	  (client<->server)
+         -----------------
+  		|	
+		|					
+		------------------------------prometheus	
+		|	
+		|-------------------------------------...
+							 |delay	- 15sec
+		---------------------------------------------
+
+ p1.sh(total duration:10s)
+ ------------------------
+ |				promeheus
+ |					|
+ |            ?------------------------------------	 
+ | push
+ |  |
+ [pushgateway]
+   |
+   |
+   |-------pull------------- [prometheus]
+	
+ ------------------------------------------------------------------------------
+ ....
+ ....//script
+ |
+ curl -x POST -H "Content-Type: text/plain" --date "$variable" 
+ http://localhost:9091/metrics/job/temp/instance/machine
+
+ ....
+ ....
+ ----------------------------------------------------------------------
+
+ download pushgateway bin file from github (or) prometheus file 
+ |
+ wget https://github.com/prometheus/pushgateway/releases/download/v1.4.3/pushgateway-1.4.3.linux-amd64.tar.gz
+ tar xzvf pushgateway-1.4.3.linux-amd64.tar.gz
+ cd pushgateway-1.4.3.linux-amd64
+ |
+ cp pushgateway /usr/local/bin
+ 
+          
+ create a pushgateway -> service file vi /etc/systemd/system/pushgateway.service
+ |
+ ..
+ ExecStart=/usr/local/bin/pushgateway
+ |
+ ..
+ ..
+ |
+ systemctl daemon-reload
+ systemctl enable pushgateway.service
+ systemctl start pushgateway.service
+ |
+ for test: => curl 127.0.0.1:9091{Enter}
+	      curl 127.0.0.1:9091/metrics {Enter}
+		...
+	  
+ |
+ update to prometheus (prometheus.yml) - endpoint
+  
+ scrape_configs:
+ - job_name: localhost-pushgateway
+   static_configs:
+     - targets: ['localhost:9091']
+
+ save and exit
+ |
+ systemctl restart prometheus
+ |
+ Go to prometheus UI ->targets
+ --------------------------------------------------------------------------------
+ Client libs 
+ -----------
+ - java - libs 
+ - ruby - libs
+ - python - libs
+  ...
+ 
+ +---------------------+
+ |  [Appln-1 ]-8001    |
+ |  [Appln-2 ]-8002    |
+ |  [Appln-3 ]-8003    |
+ |		  |    |
+ |  [http_server]-8008 |
+ + --------------------+
+   		|		
+		|		[prometheus]
+		|------------------><ApplnX:8008>	
+ 
+
+  ->flask - 5000  
+
+  127.0.0.1:5000 
+  127.0.0.1:5000/add
+  127.0.0.1:5000/savedetails
+  127.0.0.1:5000/view
+  127.0.0.1:5000
+
+
+   | client: curl,wget,broswer
+   | DB: mysql.. - 3306
+   | ...
+   | MVT:flask   - 5000
+   | 
+
+   +-------------------+
+   |   |flask-(5000)   |
+   |   | DB-(3306)     |
+   |   		       |
+   |   | monitor-8000| |
+   |---------|----------|
+	     |
+	     |-------------[prometheus:9090]
+	
+
+  +------------------------+
+  | curl:127.0.0.1:5000
+	..
+    curl:127.0.0.1:5000/page1
+	...		
+    curl:127.0.0.1:5000/page2
+    ..
+    curl:127.0.0.1:5000/pageN
+  +-------------------------+
+
+
+  metric types
+  ------------
+  counter	-------- Counter - class ->obj.method() //code logic 
+  gauge		-------- Gauge	 - class ->obj.method() //code logic	
+  histogram	-------- Histogram - class ->obj.method() //code logic
+  summary       -------- Summary - class ->obj.method() //code logic	
+			  +
+			inheritance (parent class - prometheus http-class)
+
+	monitor() - 8000
+	 -
+	 - invoke all the external methods
+
+   process_cpu
+   node_cpu
+   flask_cpu
+   jvm_cpu
+   container_cpu.. 
+   pushgateway_....
+   ------------
+   
+  
+
+
+ 
