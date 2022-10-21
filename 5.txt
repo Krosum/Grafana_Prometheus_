@@ -1,0 +1,293 @@
+
+
+   prometheus - monitoring tool
+   ----------
+
+
+	[localhost:9090] 
+	[remotehost:9100]
+
+	[localhost:9091]
+	[remotehost:9091]
+
+
+
+	[localhost:8000] - application
+	[localhost:<port>] - application
+	..
+
+	1. download node(system;application) exporter.
+
+	2. exporter - precompiled bin file
+	
+	3. create ->start service file //act as daemon 
+	|
+	4. updated node details to prometheus(prometheus.yml)
+
+	
+	any_node -------->------ promQL..
+ __________________________________________________________________________________
+	
+	OL7				localhost
+ [10.0.2.4:9091]			[localhost:9091]
+
+
+
+	client
+ [10.0.2.5:9091]		
+
+				prometheus.yml
+					
+ 				[10.0.2.4:9091]	->10.0.2.4:9091/metrics
+				[10.0.2.5:9091]
+---------------------------------------------------------------------------------
+ OL7 - node_exporter
+ ---
+  |->RES memory ..	
+  |->cpu...	..
+  
+ Alert management
+ ----------------
+
+ 1. download alertmanager bin file & copy bin file into /usr/bin (or) /usr/local/bin/
+
+ 2. create alertmanager service		/etc/systemd/system/alertmanager.service 
+
+ 3. create alertmanager yaml (or) yml file  (alertmanager.yml) ->/etc/alertmanager.yml
+
+ 4. update channel details to in alertmanager.yaml	
+
+ 5. update alertmanager details(port number) to prometheus(prometheus.yml)
+
+ 6. restart alertmanager & prometheus
+
+
+ do any changes in alertmanager.yml file ->restart alertmanager.service
+ do any changes in prometheus.yml file ->restart prometheus.service
+ -------------------------------------------------------------------------
+  
+ alert format
+ --------------
+ 
+ alert < >
+ expr: promQL <relationalOperator> value 
+ for <duration>
+ <label>
+ Annotation <label>
+ 	
+(avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m]))*100) >95
+
+ vi /etc/prometheus/myalert.yml {Enter}
+
+ groups:
+ - name: example
+   rules:
+   - alert: cpuUsages
+     expr:  (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m]))*100) >95
+     for: 1m
+     labels:
+       severity: critical
+     annotations:
+       summary: Machine under heavyload (or) predefined label
+
+ :wq
+  |
+  vi /etc/prometheus/prometheus.yml
+
+  alert_rules:
+
+   myalert.yml 
+
+ ..
+ systemctl restart prometheus.service 
+
+ -------------------------------------------------------------------------------
+ 1st - download - alertmanager bin
+ 2nd - service  - alertmanager service
+ 3rd - channel configuration
+ 4th - updated to prometheus
+ 5th - alert rule file(condition based) ->updated to prometheus file.
+
+  |
+ slack configuration
+ -------------------
+  https://company.slack.com/apps <==(1)
+		
+			[manage] <==(2)
+
+  [customeintegration]<==(3)
+			
+			[incoming webhooks] <==(4)
+  [add a configuration] <==(5)
+
+  [choose channel] <==(6)
+   #prometheus-course 
+   ...
+
+  webhook url: https://hooks.slack.... <== (7) 
+	       ----------------------
+			|<-- copy this link
+
+  paste to /etc/alertmanager/alertmanager.yml 
+	   |
+	   |
+	  api_url: <paste copied link> <==(8) 
+ 
+ 
+  systemctl restart alertmanager.service
+  systemctl status alertmanager.service
+ ________________________________________________________________________________
+  aws service - oncloud page
+  |
+ ->Iam ->create a new user->
+		policy types: | cloudwatch |
+		..
+		|
+		->new user is created ->download key
+	
+		|
+		update accesskey/secreat key -> ~/.aws/credientials
+						[default]
+						...
+						...
+
+ .... 
+ run - 6-cloudwatchexporter.sh script
+       --------------------
+	download exporter
+	service file
+	update cloud-port ->prometheus(prometheus.yml)
+	update region info ->cloudwatchexporter.yml
+  	|
+	->restart prometheus
+	  restart cloudwatch
+	
+  	->prometheus ->status ->target 
+
+	 aws_elb_health....
+	 aws_....
+	 ...
+ -------------------------------------------------------------------------------
+  node: hostXY 		
+  IP: 10.20.30.50
+  					file.yml
+ 		----json--
+					nodename: __node__
+					ipaddress: __IP__
+					------------------------------//meta data
+ 
+ label ->namespace ->placeholder 
+
+ prometheus.yml
+
+ scrape_configs:
+ - job_name: 'node-name'
+   file_sd_configs:
+   - files:
+     - file1.json
+     - file2.json
+     - file3.json
+     	(or)
+     - "*.json"
+ 
+ file1.json
+ ---------------
+ [
+  {
+   'labels': {
+		"job": "node-name"
+    },
+    "targets": [
+	"localhost:9100"
+    ]
+  }
+ }
+
+ ./node_exporter --web.listen-address=":xyz"
+
+ _______________________________________________________________________
+ prometheus server:
+ 
+ file:inventory
+ ---------------
+ [webservers]
+ node1 
+ node2				templatecode(jija2) ->dynamic value 
+ node3				{% for var in groups["all"] %}
+ ..				 - {{var}}:9100
+ [dbservers]			{%endfor%}
+ ...
+ ...
+ [testservers]
+ ..
+ ..
+ ---------------------------------------------------------------------------
+ template code
+ -------------
+  {{variable}}
+                   _________
+ 	TotalCount:|_______|
+			|
+			|<-------------{{var}}
+					  |<-------------send
+					 
+ ---------------------------------------------------------------------------
+
+
+
+				
+	User			LXC  LXC
+	---------		 |    | 
+	Kernel			[ ][ ][ ] <= cgroup - systemD 
+	--------		[  Kernel ]
+	H/W					
+
+ 1.master-node
+ 2.worker-node
+  |
+ kubectl get pods
+ export pod_name
+ ..
+ ..
+ ------------------------//(1)
+
+ _______________________________________________________________________________
+
+  loki - log - text
+  .....		
+   |->
+
+		---------------------*----------
+ (collector) ->(distribute)	- queries ->grafana
+   | 			| 	
+   |			|
+  your jobs		[index | chunk]
+
+
+  promtail	loki
+ --------	----
+ |		 *
+ client - fetch & forwards to loki 
+
+ [log] ---
+ 		
+ [log]	---   -->--[promtail]---->--[loki]---->[grafana]
+		
+ [log]	---
+  
+ 
+  [loki]		[promtail]
+    -config.yml		   -config.yml
+     -----------	    ---------
+	|			|->2nd start promtail
+	1st start
+
+ In grafana ->datasource configuration ->loki -> :3100
+
+  |->Explore - datasource view - there is no panel
+  
+  ----------------
+  |  Log Broswer   {filename = "/var/log/filename.log"}		...
+  |-----------------						...
+		 
+ ----------------------------------------------------------------------------------
